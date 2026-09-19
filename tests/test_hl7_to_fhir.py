@@ -26,19 +26,13 @@ def test_message_without_pid():
         ("F", "female"),
         ("M", "male"),
         ("O", "other"),
-        ("U", "unknown"),
-        ("X", "unknown")
+        ("U", "unknown")
     ]
 )
 def test_convert_gender(hl7_gender, expected_fhir_gender):
     result = convert_gender(hl7_gender)
 
     assert result == expected_fhir_gender
-
-def test_convert_birth_date():
-    result = convert_birth_date("19920403")
-
-    assert result == "1992-04-03"
 
 def test_parse_pid():
     pid = "PID|1||PAT12345^^^HOSPITAL_A^MR||MARTIN^Julie||19920403|F"

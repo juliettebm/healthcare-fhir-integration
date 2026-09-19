@@ -274,7 +274,7 @@ Lancer l'ensemble des tests :
 python -m pytest
 ```
 
-Le projet comporte actuellement **51 tests automatisés**.
+Les cas couverts sont listés ci-dessous.
 
 Les tests couvrent notamment :
 
