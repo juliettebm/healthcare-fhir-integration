@@ -1,5 +1,15 @@
-import requests
 import json
+
+import requests
+
+
+class OllamaUnavailableError(Exception):
+    """Ollama est injoignable ou a répondu avec une erreur HTTP."""
+
+
+class InvalidLLMResponseError(ValueError):
+    """Ollama a répondu, mais la réponse n'est pas un diagnostic exploitable."""
+
 
 SYSTEM_PROMPT = """
 Tu es un assistant technique spécialisé en interopérabilité des systèmes d'information en santé.
@@ -81,33 +91,43 @@ N'ajoute aucun texte en dehors du JSON.
 """
 
 def call_ollama(prompt):
-    response = requests.post(
-        "http://localhost:11434/api/chat",
-        json={
-            "model": "llama3.2",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "stream": False,
-            "format": "json"
-        },
-        timeout=60
-    )
+    try:
+        response = requests.post(
+            "http://localhost:11434/api/chat",
+            json={
+                "model": "llama3.2",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "stream": False,
+                "format": "json"
+            },
+            timeout=60
+        )
 
-    response.raise_for_status()
+        response.raise_for_status()
 
-    response_data = response.json()
+    except requests.RequestException as error:
+        raise OllamaUnavailableError(
+            f"Ollama indisponible : {error}"
+        ) from error
 
-    content = response_data["message"]["content"]
+    try:
+        content = response.json()["message"]["content"]
 
-    return json.loads(content)
+        return json.loads(content)
+
+    except (ValueError, KeyError, TypeError) as error:
+        raise InvalidLLMResponseError(
+            f"Réponse Ollama illisible : {error}"
+        ) from error
 
 def diagnose_interop_error(error_message, hl7_message, severity):
     context = build_error_context(
@@ -120,10 +140,13 @@ def diagnose_interop_error(error_message, hl7_message, severity):
 
     diagnostic = call_ollama(prompt)
 
+    if not isinstance(diagnostic, dict):
+        raise InvalidLLMResponseError("Diagnostic LLM invalide")
+
     diagnostic["severity"] = severity
 
     if not validate_diagnostic(diagnostic):
-        raise ValueError("Diagnostic LLM invalide")
+        raise InvalidLLMResponseError("Diagnostic LLM invalide")
 
     return diagnostic
 

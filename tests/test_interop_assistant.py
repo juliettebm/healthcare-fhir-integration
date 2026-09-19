@@ -1,9 +1,13 @@
 import pytest
+import requests
 
 from ai.interop_assistant import (
     validate_diagnostic,
     build_error_context,
-    diagnose_interop_error
+    diagnose_interop_error,
+    call_ollama,
+    InvalidLLMResponseError,
+    OllamaUnavailableError
 )
 
 def test_build_error_context_with_severity():
@@ -101,3 +105,66 @@ def test_invalid_llm_output_is_rejected(monkeypatch):
             "MSH|^~\\&|HOSPITAL_A|PARIS",
             "blocking"
         )
+
+
+class FakeResponse:
+    def __init__(self, json_data=None, status_error=None):
+        self._json_data = json_data
+        self._status_error = status_error
+
+    def raise_for_status(self):
+        if self._status_error:
+            raise self._status_error
+
+    def json(self):
+        return self._json_data
+
+
+def test_ollama_connection_error_is_reported_as_unavailable(monkeypatch):
+    def fake_post(*args, **kwargs):
+        raise requests.ConnectionError("connection refused")
+
+    monkeypatch.setattr("ai.interop_assistant.requests.post", fake_post)
+
+    with pytest.raises(OllamaUnavailableError):
+        call_ollama("prompt")
+
+
+def test_ollama_http_error_is_reported_as_unavailable(monkeypatch):
+    def fake_post(*args, **kwargs):
+        return FakeResponse(status_error=requests.HTTPError("500"))
+
+    monkeypatch.setattr("ai.interop_assistant.requests.post", fake_post)
+
+    with pytest.raises(OllamaUnavailableError):
+        call_ollama("prompt")
+
+
+def test_ollama_non_json_content_is_reported_as_invalid(monkeypatch):
+    def fake_post(*args, **kwargs):
+        return FakeResponse({"message": {"content": "pas du JSON"}})
+
+    monkeypatch.setattr("ai.interop_assistant.requests.post", fake_post)
+
+    with pytest.raises(InvalidLLMResponseError):
+        call_ollama("prompt")
+
+
+def test_ollama_unexpected_payload_is_reported_as_invalid(monkeypatch):
+    def fake_post(*args, **kwargs):
+        return FakeResponse({"unexpected": "payload"})
+
+    monkeypatch.setattr("ai.interop_assistant.requests.post", fake_post)
+
+    with pytest.raises(InvalidLLMResponseError):
+        call_ollama("prompt")
+
+
+def test_llm_json_that_is_not_an_object_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        "ai.interop_assistant.call_ollama",
+        lambda prompt: ["not", "an", "object"]
+    )
+
+    with pytest.raises(InvalidLLMResponseError):
+        diagnose_interop_error("erreur", "MSH|^~\\&|A|B", "blocking")

@@ -91,8 +91,9 @@ L'assistant IA est un composant optionnel. Son indisponibilité (serveur Ollama 
 - Extraction et interprétation du segment PID
 - Mapping HL7 v2 → FHIR Patient
 - Gestion de données HL7 incomplètes
-- Validation des dates HL7
-- Mapping des codes de sexe HL7 vers FHIR
+- Validation des dates HL7, y compris les dates partielles (`YYYY`, `YYYYMM`)
+- Mapping des codes de sexe HL7 vers FHIR, avec avertissement en cas de code inattendu
+- Journalisation avec le module standard `logging`
 - Génération d'une ressource FHIR au format JSON
 - Tests automatisés avec pytest
 - Exécution automatique des tests avec GitHub Actions
@@ -224,7 +225,17 @@ est mappée vers :
 female
 ```
 
-Les dates calendaires invalides sont rejetées lors de la conversion. Les codes de sexe HL7 explicitement pris en charge sont `F`, `M`, `O` et `U`. Dans ce prototype, une autre valeur est normalisée vers `unknown`.
+Les dates HL7 partielles sont prises en charge, comme le permet le type FHIR `date` :
+
+| HL7 v2 | FHIR |
+|---|---|
+| `19920403` | `1992-04-03` |
+| `199204` | `1992-04` |
+| `1992` | `1992` |
+
+Les dates impossibles (`20260231`), mal formées ou de longueur inattendue sont rejetées : `birthDate` vaut alors `None` et un avertissement est journalisé.
+
+Les codes de sexe HL7 explicitement pris en charge sont `F`, `M`, `O` et `U`. Un autre code (par exemple `X`) est normalisé vers `unknown`, et un avertissement `WARNING` est journalisé pour signaler cette perte d'information. Un champ vide donne aussi `unknown`, sans avertissement puisqu'il ne s'agit pas d'un code inattendu.
 
 ### 3. Diagnostic IA des erreurs d'interopérabilité
 
@@ -263,7 +274,7 @@ Lancer l'ensemble des tests :
 python -m pytest
 ```
 
-Le projet comporte actuellement **28 tests automatisés**.
+Le projet comporte actuellement **51 tests automatisés**.
 
 Les tests couvrent notamment :
 
@@ -274,9 +285,9 @@ Les tests couvrent notamment :
 - la gestion des erreurs HTTP de l'API FHIR ;
 - la gestion d'une erreur de connexion FHIR par le programme principal ;
 - la création et la persistance de patients dans une base SQLite temporaire ;
-- la conversion et la validation des dates HL7 ;
+- la conversion des dates HL7 complètes et partielles, et le rejet des dates impossibles ;
 - le mapping du sexe HL7 → FHIR ;
-- le comportement face à un code de sexe inattendu ;
+- l'avertissement journalisé face à un code de sexe inattendu ;
 - la conversion d'un segment PID complet ;
 - l'absence de prénom ;
 - les segments PID incomplets ;
@@ -286,7 +297,8 @@ Les tests couvrent notamment :
 - la transmission de la sévérité déterminée par le pipeline ;
 - la priorité des règles déterministes Python sur les sorties du LLM ;
 - le rejet d'une réponse LLM incomplète ;
-- la résilience du pipeline lorsque l'assistant IA est indisponible.
+- la distinction entre une panne d'Ollama (connexion, erreur HTTP) et une réponse LLM invalide (JSON illisible, structure inattendue) ;
+- la résilience du pipeline dans ces deux cas, avec journalisation, et le fait qu'un bug inattendu n'est pas masqué.
 
 Les tests du comportement IA utilisent des réponses simulées lorsque nécessaire afin de tester la logique applicative sans dépendre de la disponibilité d'un serveur Ollama.
 
@@ -406,7 +418,8 @@ Il pourrait être étendu avec :
 - une validation FHIR plus complète ;
 - la gestion de systèmes d'identifiants (`identifier.system`) ;
 - l'envoi des ressources générées vers une API FHIR ;
-- une gestion plus avancée des erreurs et des logs ;
+- une journalisation plus avancée (fichiers, rotation, niveaux configurables) ;
+- la prise en charge des dates HL7 avec heure et fuseau horaire ;
 - l'utilisation d'un schéma JSON plus strict pour valider les sorties du LLM ;
 - l'évaluation du comportement de l'assistant sur un jeu de cas d'erreurs HL7 ;
 - la prise en charge de plusieurs catégories d'erreurs avec des niveaux de sévérité déterminés par le pipeline ;

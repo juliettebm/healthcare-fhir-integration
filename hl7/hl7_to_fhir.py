@@ -1,5 +1,9 @@
 import json
-from datetime import datetime
+import logging
+from datetime import date
+
+logger = logging.getLogger(__name__)
+
 
 def parse_pid(pid_segment):
     fields = pid_segment.split("|")
@@ -48,26 +52,52 @@ def parse_pid(pid_segment):
     return fhir_patient
 
 def convert_birth_date(birth_date):
-    if len(birth_date) != 8 or not birth_date.isdigit():
+    """Convertit une date HL7 (YYYY, YYYYMM ou YYYYMMDD) en date FHIR."""
+    if not birth_date:
         return None
 
-    try:
-        datetime.strptime(birth_date, "%Y%m%d")
-    except ValueError:
+    if len(birth_date) not in (4, 6, 8) or not birth_date.isdigit():
+        logger.warning("Date de naissance HL7 non reconnue : valeur ignorée")
         return None
+
+    year = int(birth_date[0:4])
+    month = int(birth_date[4:6]) if len(birth_date) >= 6 else 1
+    day = int(birth_date[6:8]) if len(birth_date) == 8 else 1
+
+    try:
+        date(year, month, day)
+    except ValueError:
+        logger.warning("Date de naissance HL7 impossible : valeur ignorée")
+        return None
+
+    if len(birth_date) == 4:
+        return birth_date[0:4]
+
+    if len(birth_date) == 6:
+        return f"{birth_date[0:4]}-{birth_date[4:6]}"
 
     return f"{birth_date[0:4]}-{birth_date[4:6]}-{birth_date[6:8]}"
 
 
-def convert_gender(gender):
-    gender_mapping = {
-        "F": "female",
-        "M": "male",
-        "O": "other",
-        "U": "unknown"
-    }
+GENDER_MAPPING = {
+    "F": "female",
+    "M": "male",
+    "O": "other",
+    "U": "unknown"
+}
 
-    return gender_mapping.get(gender, "unknown")
+
+def convert_gender(gender):
+    if gender in GENDER_MAPPING:
+        return GENDER_MAPPING[gender]
+
+    if gender:
+        logger.warning(
+            "Code de sexe HL7 inattendu %r : normalisé en 'unknown'",
+            gender
+        )
+
+    return "unknown"
 
 def read_hl7_message(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
@@ -89,20 +119,43 @@ def save_fhir_patient(patient, file_path):
         json.dump(patient, file, indent=4, ensure_ascii=False)
 
 def get_ai_diagnostic(error_message, hl7_message, severity):
-    try:
-        from ai.interop_assistant import diagnose_interop_error
+    """Demande un diagnostic à l'assistant IA local.
 
+    Une panne de l'IA ne doit jamais casser le pipeline : on journalise
+    et on renvoie None.
+    """
+    try:
+        from ai.interop_assistant import (
+            InvalidLLMResponseError,
+            OllamaUnavailableError,
+            diagnose_interop_error,
+        )
+    except ImportError as error:
+        logger.warning("Assistant IA non disponible : %s", error)
+        return None
+
+    try:
         return diagnose_interop_error(
             error_message,
             hl7_message,
             severity
         )
 
-    except Exception:
-        return None
+    except OllamaUnavailableError as error:
+        logger.warning("Ollama indisponible, diagnostic IA ignoré : %s", error)
+
+    except InvalidLLMResponseError as error:
+        logger.error("Réponse IA invalide, diagnostic ignoré : %s", error)
+
+    return None
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s : %(message)s"
+    )
+
     message = read_hl7_message("hl7/sample_message.hl7")
 
     try:
@@ -111,10 +164,10 @@ if __name__ == "__main__":
 
         save_fhir_patient(fhir_patient, "hl7/patient.json")
 
-        print("Patient FHIR créé : hl7/patient.json")
+        logger.info("Patient FHIR créé : hl7/patient.json")
 
     except ValueError as error:
-        print("Erreur d'interopérabilité détectée :", error)
+        logger.error("Erreur d'interopérabilité détectée : %s", error)
 
         diagnostic = get_ai_diagnostic(
             str(error),
@@ -125,6 +178,3 @@ if __name__ == "__main__":
         if diagnostic is not None:
             print("Diagnostic IA :")
             print(json.dumps(diagnostic, indent=4, ensure_ascii=False))
-
-        else:
-            print("Diagnostic IA indisponible.")

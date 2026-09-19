@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from hl7.hl7_to_fhir import (
@@ -6,6 +8,10 @@ from hl7.hl7_to_fhir import (
     convert_gender,
     find_pid_segment,
     get_ai_diagnostic
+)
+from ai.interop_assistant import (
+    InvalidLLMResponseError,
+    OllamaUnavailableError
 )
 
 def test_message_without_pid():
@@ -60,24 +66,115 @@ def test_parse_incomplete_pid():
     with pytest.raises(ValueError):
         parse_pid(pid)
 
-def test_ai_failure_does_not_break_pipeline(monkeypatch):
+def test_ollama_unavailable_does_not_break_pipeline(monkeypatch, caplog):
     def fake_diagnose_interop_error(error_message, hl7_message, severity):
-        raise ConnectionError("Ollama unavailable")
+        raise OllamaUnavailableError("connection refused")
 
     monkeypatch.setattr(
         "ai.interop_assistant.diagnose_interop_error",
         fake_diagnose_interop_error
     )
 
-    result = get_ai_diagnostic(
-        "Aucun segment PID trouvé",
-        "MSH|^~\\&|HOSPITAL_A|PARIS",
-        "blocking"
-    )
+    with caplog.at_level(logging.WARNING):
+        result = get_ai_diagnostic(
+            "Aucun segment PID trouvé",
+            "MSH|^~\\&|HOSPITAL_A|PARIS",
+            "blocking"
+        )
 
     assert result is None
+    assert "Ollama indisponible" in caplog.text
+    assert caplog.records[0].levelno == logging.WARNING
 
-def test_convert_invalid_birth_date():
-    assert convert_birth_date("ABCDEFGH") is None
-    assert convert_birth_date("20260231") is None
-    assert convert_birth_date("199204") is None
+
+def test_invalid_ai_response_does_not_break_pipeline(monkeypatch, caplog):
+    def fake_diagnose_interop_error(error_message, hl7_message, severity):
+        raise InvalidLLMResponseError("Diagnostic LLM invalide")
+
+    monkeypatch.setattr(
+        "ai.interop_assistant.diagnose_interop_error",
+        fake_diagnose_interop_error
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = get_ai_diagnostic(
+            "Aucun segment PID trouvé",
+            "MSH|^~\\&|HOSPITAL_A|PARIS",
+            "blocking"
+        )
+
+    assert result is None
+    assert "Réponse IA invalide" in caplog.text
+    assert caplog.records[0].levelno == logging.ERROR
+
+
+def test_unexpected_ai_bug_is_not_masked(monkeypatch):
+    def fake_diagnose_interop_error(error_message, hl7_message, severity):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(
+        "ai.interop_assistant.diagnose_interop_error",
+        fake_diagnose_interop_error
+    )
+
+    with pytest.raises(RuntimeError):
+        get_ai_diagnostic("erreur", "MSH|^~\\&|A|B", "blocking")
+
+
+@pytest.mark.parametrize(
+    "hl7_date, expected_fhir_date",
+    [
+        ("19920403", "1992-04-03"),
+        ("199204", "1992-04"),
+        ("1992", "1992"),
+        ("20240229", "2024-02-29")
+    ]
+)
+def test_convert_full_and_partial_birth_dates(hl7_date, expected_fhir_date):
+    assert convert_birth_date(hl7_date) == expected_fhir_date
+
+
+@pytest.mark.parametrize(
+    "invalid_date",
+    ["ABCDEFGH", "20260231", "20230229", "199213", "19920400", "0000", "19921", ""]
+)
+def test_convert_invalid_birth_date(invalid_date):
+    assert convert_birth_date(invalid_date) is None
+
+
+def test_invalid_birth_date_logs_warning(caplog):
+    with caplog.at_level(logging.WARNING):
+        convert_birth_date("20260231")
+
+    assert "impossible" in caplog.text
+
+
+def test_parse_pid_with_partial_birth_date():
+    pid = "PID|1||PAT12345^^^HOSPITAL_A^MR||MARTIN^Julie||199204|F"
+
+    result = parse_pid(pid)
+
+    assert result["birthDate"] == "1992-04"
+
+
+def test_unexpected_gender_logs_warning(caplog):
+    with caplog.at_level(logging.WARNING):
+        result = convert_gender("X")
+
+    assert result == "unknown"
+    assert "'X'" in caplog.text
+
+
+def test_known_gender_does_not_log_warning(caplog):
+    with caplog.at_level(logging.WARNING):
+        convert_gender("F")
+
+    assert caplog.records == []
+
+
+def test_empty_gender_is_unknown_without_warning(caplog):
+    with caplog.at_level(logging.WARNING):
+        result = convert_gender("")
+
+    assert result == "unknown"
+    assert caplog.records == []

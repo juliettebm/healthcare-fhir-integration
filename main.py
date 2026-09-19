@@ -1,8 +1,12 @@
+import logging
+
 import requests
 
 from src.fhir_client import get_patient_pages
 from src.parser import parse_patient, validate_patient
 from src.database import create_database, save_patients, get_all_patients
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -21,7 +25,7 @@ def main():
                 patient = entry.get("resource")
 
                 if patient is None:
-                    print("Entrée ignorée : ressource FHIR absente")
+                    logger.warning("Entrée ignorée : ressource FHIR absente")
                     continue
 
                 parsed_patient = parse_patient(patient)
@@ -29,12 +33,12 @@ def main():
                 if validate_patient(parsed_patient):
                     patients_to_save.append(parsed_patient)
                 else:
-                    print("Patient ignoré : identifiant manquant")
+                    logger.warning("Patient ignoré : identifiant manquant")
 
                 print(parsed_patient)
 
     except requests.RequestException as error:
-        print(f"Erreur lors de l'appel à l'API FHIR : {error}")
+        logger.error("Erreur lors de l'appel à l'API FHIR : %s", error)
         return
 
     save_patients(patients_to_save)
@@ -49,4 +53,8 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s : %(message)s"
+    )
     main()
