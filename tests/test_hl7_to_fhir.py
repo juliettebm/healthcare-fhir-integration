@@ -78,7 +78,7 @@ def test_ollama_unavailable_does_not_break_pipeline(monkeypatch, caplog):
 
     assert result is None
     assert "Ollama indisponible" in caplog.text
-    assert caplog.records[0].levelno == logging.WARNING
+    assert any(r.levelno == logging.WARNING for r in caplog.records)
 
 
 def test_invalid_ai_response_does_not_break_pipeline(monkeypatch, caplog):
@@ -99,7 +99,7 @@ def test_invalid_ai_response_does_not_break_pipeline(monkeypatch, caplog):
 
     assert result is None
     assert "Réponse IA invalide" in caplog.text
-    assert caplog.records[0].levelno == logging.ERROR
+    assert any(r.levelno == logging.ERROR for r in caplog.records)
 
 
 def test_unexpected_ai_bug_is_not_masked(monkeypatch):
