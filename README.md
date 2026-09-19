@@ -153,6 +153,8 @@ L'installation d'Ollama est optionnelle pour le fonctionnement du pipeline HL7/F
 
 Le pipeline interroge le serveur public de test HAPI FHIR R4, récupère des ressources `Patient`, gère la pagination, normalise les données puis les stocke dans une base SQLite locale.
 
+La persistance utilise `INSERT OR REPLACE` avec l'`id` FHIR comme clé primaire : relancer le pipeline met à jour les patients déjà présents sans créer de doublons.
+
 ```bash
 python main.py
 ```
@@ -285,6 +287,7 @@ Les tests couvrent notamment :
 - la gestion des erreurs HTTP de l'API FHIR ;
 - la gestion d'une erreur de connexion FHIR par le programme principal ;
 - la création et la persistance de patients dans une base SQLite temporaire ;
+- l'idempotence de la persistance : sauvegarder deux fois le même `id` remplace la ligne existante au lieu de créer un doublon ou de lever une erreur ;
 - la conversion des dates HL7 complètes et partielles, et le rejet des dates impossibles ;
 - le mapping du sexe HL7 → FHIR ;
 - l'avertissement journalisé face à un code de sexe inattendu ;
