@@ -4,9 +4,8 @@ import sqlite3
 DATABASE_NAME = "patients.db"
 
 
-def create_database():
-    connection = sqlite3.connect(DATABASE_NAME)
-
+def create_database(database_name=DATABASE_NAME):
+    connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -22,9 +21,9 @@ def create_database():
     connection.commit()
     connection.close()
 
-def save_patients(patients):
-    connection = sqlite3.connect(DATABASE_NAME)
 
+def save_patients(patients, database_name=DATABASE_NAME):
+    connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
 
     for patient in patients:
@@ -48,13 +47,12 @@ def save_patients(patients):
     connection.commit()
     connection.close()
 
-def get_all_patients():
-    connection = sqlite3.connect(DATABASE_NAME)
 
+def get_all_patients(database_name=DATABASE_NAME):
+    connection = sqlite3.connect(database_name)
     cursor = connection.cursor()
 
     cursor.execute("SELECT * FROM patients")
-
     patients = cursor.fetchall()
 
     connection.close()

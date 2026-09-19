@@ -58,8 +58,9 @@ Analyse l'erreur d'interopérabilité suivante.
 
 Erreur détectée :
 {context["error_message"]}
-Erreur détectée :
-{context["error_message"]}
+
+Sévérité déterminée par le pipeline :
+{context["severity"]}
 
 Message HL7 :
 {context["hl7_message"]}

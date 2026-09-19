@@ -1,5 +1,5 @@
 import json
-from ai.interop_assistant import diagnose_interop_error
+from datetime import datetime
 
 def parse_pid(pid_segment):
     fields = pid_segment.split("|")
@@ -48,10 +48,15 @@ def parse_pid(pid_segment):
     return fhir_patient
 
 def convert_birth_date(birth_date):
-    if len(birth_date) == 8:
-        return f"{birth_date[0:4]}-{birth_date[4:6]}-{birth_date[6:8]}"
+    if len(birth_date) != 8 or not birth_date.isdigit():
+        return None
 
-    return None
+    try:
+        datetime.strptime(birth_date, "%Y%m%d")
+    except ValueError:
+        return None
+
+    return f"{birth_date[0:4]}-{birth_date[4:6]}-{birth_date[6:8]}"
 
 
 def convert_gender(gender):
@@ -65,9 +70,8 @@ def convert_gender(gender):
     return gender_mapping.get(gender, "unknown")
 
 def read_hl7_message(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         message = file.read()
-
     return message
 
 
@@ -81,8 +85,22 @@ def find_pid_segment(message):
     raise ValueError("Aucun segment PID trouvé")
 
 def save_fhir_patient(patient, file_path):
-    with open(file_path, "w") as file:
-        json.dump(patient, file, indent=4)
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(patient, file, indent=4, ensure_ascii=False)
+
+def get_ai_diagnostic(error_message, hl7_message, severity):
+    try:
+        from ai.interop_assistant import diagnose_interop_error
+
+        return diagnose_interop_error(
+            error_message,
+            hl7_message,
+            severity
+        )
+
+    except Exception:
+        return None
+
 
 if __name__ == "__main__":
     message = read_hl7_message("hl7/sample_message.hl7")
@@ -98,11 +116,15 @@ if __name__ == "__main__":
     except ValueError as error:
         print("Erreur d'interopérabilité détectée :", error)
 
-        diagnostic = diagnose_interop_error(
+        diagnostic = get_ai_diagnostic(
             str(error),
             message,
             "blocking"
         )
 
-        print("Diagnostic IA :")
-        print(json.dumps(diagnostic, indent=4, ensure_ascii=False))
+        if diagnostic is not None:
+            print("Diagnostic IA :")
+            print(json.dumps(diagnostic, indent=4, ensure_ascii=False))
+
+        else:
+            print("Diagnostic IA indisponible.")
