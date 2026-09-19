@@ -1,3 +1,5 @@
+import pytest
+
 from ai.interop_assistant import (
     validate_diagnostic,
     build_error_context,
@@ -80,3 +82,22 @@ def test_pipeline_severity_overrides_llm_severity(monkeypatch):
     )
 
     assert result["severity"] == "blocking"
+
+def test_invalid_llm_output_is_rejected(monkeypatch):
+    def fake_call_ollama(prompt):
+        return {
+            "error_type": "HL7 Parsing Error",
+            "severity": "blocking"
+        }
+
+    monkeypatch.setattr(
+        "ai.interop_assistant.call_ollama",
+        fake_call_ollama
+    )
+
+    with pytest.raises(ValueError, match="Diagnostic LLM invalide"):
+        diagnose_interop_error(
+            "Aucun segment PID trouvé",
+            "MSH|^~\\&|HOSPITAL_A|PARIS",
+            "blocking"
+        )
