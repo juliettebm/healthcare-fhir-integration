@@ -90,7 +90,7 @@ Le champ "severity" de ta réponse doit reprendre exactement la valeur fournie.
 N'ajoute aucun texte en dehors du JSON.
 """
 
-def call_ollama(prompt):
+def call_ollama(prompt, system_prompt=SYSTEM_PROMPT):
     try:
         response = requests.post(
             "http://localhost:11434/api/chat",
@@ -99,7 +99,7 @@ def call_ollama(prompt):
                 "messages": [
                     {
                         "role": "system",
-                        "content": SYSTEM_PROMPT
+                        "content": system_prompt
                     },
                     {
                         "role": "user",
@@ -107,6 +107,7 @@ def call_ollama(prompt):
                     }
                 ],
                 "stream": False,
+                "options": {"temperature": 0},
                 "format": "json"
             },
             timeout=60
