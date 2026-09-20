@@ -283,6 +283,17 @@ python -m ai.evaluate_triage
 
 Avec Llama 3.2 et une température à 0, le script donne 23 bonnes réponses sur 25 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
 
+### 5. Démo Streamlit (optionnelle)
+
+Une page minimale permet d'essayer le tri de demandes sans passer par le terminal. Elle nécessite Ollama et l'installation de Streamlit, qui n'est pas requis par le reste du projet :
+
+```bash
+pip install -r requirements-app.txt
+streamlit run app.py
+```
+
+La page affiche la catégorie choisie, ou un message d'erreur clair si Ollama est indisponible ou si la réponse du modèle est rejetée par la validation.
+
 ## Tests
 
 Lancer l'ensemble des tests :
@@ -366,7 +377,9 @@ healthcare-fhir-integration/
 │   └── test_ticket_triage.py
 │
 ├── .gitignore
+├── app.py
 ├── main.py
+├── requirements-app.txt
 └── requirements.txt
 ```
 
@@ -379,6 +392,7 @@ healthcare-fhir-integration/
 - `sample_message.hl7` : message HL7 v2 fictif utilisé pour la démonstration.
 - `interop_assistant.py` : assistant IA local de diagnostic des erreurs d'interopérabilité, utilisant Ollama/Llama 3.2 avec sortie JSON structurée et validation déterministe.
 - `ticket_triage.py`, `evaluate_triage.py`, `support_tickets.json` : tri de demandes de support par le LLM, validation de la catégorie et évaluation sur des tickets fictifs.
+- `app.py` : démo Streamlit optionnelle du tri de demandes (dépendance séparée dans `requirements-app.txt`).
 - `tests/` : tests automatisés des fonctions de parsing, validation, mapping, persistance et résilience.
 - `.github/workflows/tests.yml` : workflow d'intégration continue exécutant automatiquement la suite pytest.
 
