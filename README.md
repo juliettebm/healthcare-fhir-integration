@@ -104,6 +104,7 @@ L'assistant IA est un composant optionnel. Son indisponibilité (serveur Ollama 
 - Validation déterministe des réponses du LLM
 - Séparation entre règles métier déterministes et analyse assistée par LLM
 - Fallback permettant au pipeline de fonctionner lorsque l'assistant IA est indisponible
+- Tri de demandes de support par le LLM parmi des catégories fixes, avec évaluation chiffrée sur des tickets fictifs
 
 ## Installation
 
@@ -268,6 +269,20 @@ La sévérité est déterminée par le pipeline Python et non par le LLM. La ré
 
 Si l'assistant IA est indisponible ou produit une réponse ne respectant pas le contrat attendu, l'erreur détectée par Python reste disponible et le pipeline principal continue de fonctionner indépendamment du LLM.
 
+### 4. Tri de demandes de support
+
+Un second usage du LLM : classer une demande interne rédigée en langage libre (par exemple « la date de naissance est vide sur de nombreuses fiches ») dans **une catégorie d'une liste fermée** : `erreur_de_mapping`, `donnee_manquante`, `probleme_de_connexion`, `question_de_format` ou `autre`.
+
+Le LLM ne fait que choisir une catégorie. Python vérifie que la réponse appartient bien à la liste et rejette tout le reste.
+
+Pour mesurer la qualité du tri, un jeu de 20 demandes fictives étiquetées est fourni dans `ai/support_tickets.json` :
+
+```bash
+python -m ai.evaluate_triage
+```
+
+Avec Llama 3.2 et une température à 0, le script donne 18 bonnes réponses sur 20 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
+
 ## Tests
 
 Lancer l'ensemble des tests :
@@ -327,7 +342,10 @@ healthcare-fhir-integration/
 │       └── tests.yml
 │
 ├── ai/
-│   └── interop_assistant.py
+│   ├── evaluate_triage.py
+│   ├── interop_assistant.py
+│   ├── support_tickets.json
+│   └── ticket_triage.py
 │
 ├── hl7/
 │   ├── sample_message.hl7
@@ -344,7 +362,8 @@ healthcare-fhir-integration/
 │   ├── test_hl7_to_fhir.py
 │   ├── test_interop_assistant.py
 │   ├── test_main.py
-│   └── test_parser.py
+│   ├── test_parser.py
+│   └── test_ticket_triage.py
 │
 ├── .gitignore
 ├── main.py
@@ -359,6 +378,7 @@ healthcare-fhir-integration/
 - `hl7_to_fhir.py` : lecture d'un message HL7 v2, parsing du segment PID et mapping vers une ressource FHIR Patient.
 - `sample_message.hl7` : message HL7 v2 fictif utilisé pour la démonstration.
 - `interop_assistant.py` : assistant IA local de diagnostic des erreurs d'interopérabilité, utilisant Ollama/Llama 3.2 avec sortie JSON structurée et validation déterministe.
+- `ticket_triage.py`, `evaluate_triage.py`, `support_tickets.json` : tri de demandes de support par le LLM, validation de la catégorie et évaluation sur des tickets fictifs.
 - `tests/` : tests automatisés des fonctions de parsing, validation, mapping, persistance et résilience.
 - `.github/workflows/tests.yml` : workflow d'intégration continue exécutant automatiquement la suite pytest.
 
@@ -426,6 +446,7 @@ Il pourrait être étendu avec :
 - l'utilisation d'un schéma JSON plus strict pour valider les sorties du LLM ;
 - l'évaluation du comportement de l'assistant sur un jeu de cas d'erreurs HL7 ;
 - la prise en charge de plusieurs catégories d'erreurs avec des niveaux de sévérité déterminés par le pipeline ;
+- un jeu d'évaluation plus large, avec des demandes réelles anonymisées, pour le tri de demandes ;
 - l'abstraction du fournisseur LLM afin de pouvoir remplacer Ollama par un autre modèle ou une API sans modifier la logique métier.
 
 ## Objectif
