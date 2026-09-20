@@ -98,5 +98,9 @@
     {
         "text": "Quelqu'un a le lien de la salle de visio pour la démo client de demain ?",
         "expected": "autre"
+    },
+    {
+        "text": "Un patient n'apparaît pas chez nous, est-ce un problème de synchronisation ?",
+        "expected": "donnee_manquante"
     }
 ]

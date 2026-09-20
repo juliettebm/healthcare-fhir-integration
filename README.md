@@ -275,13 +275,15 @@ Un second usage du LLM : classer une demande interne rédigée en langage libre 
 
 Le LLM ne fait que choisir une catégorie. Python vérifie que la réponse appartient bien à la liste et rejette tout le reste.
 
-Pour mesurer la qualité du tri, un jeu de 25 demandes fictives étiquetées est fourni dans `ai/support_tickets.json` :
+Pour mesurer la qualité du tri, un jeu de 26 demandes fictives étiquetées est fourni dans `ai/support_tickets.json` :
 
 ```bash
 python -m ai.evaluate_triage
 ```
 
-Avec Llama 3.2 et une température à 0, le script donne 23 bonnes réponses sur 25 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
+Avec Llama 3.2 et une température à 0, le script donne 23 bonnes réponses sur 26 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
+
+**Limite observée.** Une demande ambiguë (« Un patient n'apparaît pas chez nous, est-ce un problème de synchronisation ? ») est classée `question_de_format` parce qu'elle est formulée comme une question. La validation Python ne peut pas détecter cette erreur : la catégorie fait bien partie de la liste autorisée. Deux tentatives de correction ont été mesurées puis abandonnées, car elles dégradaient le score global : préciser la définition de `question_de_format` (22 sur 26), puis ajouter une règle au prompt système (20 sur 26). Avec un petit modèle local, la formulation du prompt change fortement les résultats ; d'où l'intérêt de mesurer avant de modifier.
 
 ### 5. Démo Streamlit (optionnelle)
 
