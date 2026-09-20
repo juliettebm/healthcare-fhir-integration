@@ -275,13 +275,13 @@ Un second usage du LLM : classer une demande interne rédigée en langage libre 
 
 Le LLM ne fait que choisir une catégorie. Python vérifie que la réponse appartient bien à la liste et rejette tout le reste.
 
-Pour mesurer la qualité du tri, un jeu de 20 demandes fictives étiquetées est fourni dans `ai/support_tickets.json` :
+Pour mesurer la qualité du tri, un jeu de 25 demandes fictives étiquetées est fourni dans `ai/support_tickets.json` :
 
 ```bash
 python -m ai.evaluate_triage
 ```
 
-Avec Llama 3.2 et une température à 0, le script donne 18 bonnes réponses sur 20 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
+Avec Llama 3.2 et une température à 0, le script donne 23 bonnes réponses sur 25 (score identique sur deux lancements consécutifs). Ce score est à interpréter avec prudence : les demandes et le prompt ont été écrits par la même personne, sur un jeu très petit. Il illustre la démarche d'évaluation, pas une performance en conditions réelles.
 
 ## Tests
 

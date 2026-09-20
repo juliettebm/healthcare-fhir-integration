@@ -1,26 +1,102 @@
 [
-    {"text": "Le sexe des patients arrive en 'unknown' alors que le logiciel de l'hôpital envoie bien 'F' ou 'M'.", "expected": "erreur_de_mapping"},
-    {"text": "Les dates de naissance sont décalées d'un jour dans Doctolib par rapport au logiciel du centre d'imagerie.", "expected": "erreur_de_mapping"},
-    {"text": "Le nom de famille se retrouve dans le champ prénom pour les patients du centre de santé.", "expected": "erreur_de_mapping"},
-    {"text": "L'identifiant du patient est associé au mauvais champ après l'import depuis l'hôpital.", "expected": "erreur_de_mapping"},
-
-    {"text": "La date de naissance est vide sur de nombreuses fiches patient importées ce matin.", "expected": "donnee_manquante"},
-    {"text": "Certains patients n'ont pas de prénom après la synchronisation avec le magasin d'optique.", "expected": "donnee_manquante"},
-    {"text": "Le champ adresse est absent pour tous les patients venant de l'audioprothésiste.", "expected": "donnee_manquante"},
-    {"text": "Un patient de l'hôpital n'apparaît pas du tout chez nous alors qu'il est bien dans leur logiciel.", "expected": "donnee_manquante"},
-
-    {"text": "On ne reçoit plus aucun message de l'hôpital depuis ce matin.", "expected": "probleme_de_connexion"},
-    {"text": "L'API du centre d'imagerie répond avec une erreur 500 à chaque appel.", "expected": "probleme_de_connexion"},
-    {"text": "La synchronisation est très lente et se termine souvent par un timeout.", "expected": "probleme_de_connexion"},
-    {"text": "Le connecteur n'arrive plus à joindre le serveur du centre de santé depuis la mise à jour.", "expected": "probleme_de_connexion"},
-
-    {"text": "Quelle est la différence entre un identifiant FHIR et un identifiant PID-3 en HL7 ?", "expected": "question_de_format"},
-    {"text": "Où trouve-t-on la documentation du segment PID dans un message HL7 v2 ?", "expected": "question_de_format"},
-    {"text": "Comment est structurée une ressource Patient FHIR pour le nom et le prénom ?", "expected": "question_de_format"},
-    {"text": "Est-ce qu'un Bundle FHIR peut contenir plusieurs types de ressources ?", "expected": "question_de_format"},
-
-    {"text": "Pouvez-vous m'ajouter à la liste de diffusion de l'équipe ?", "expected": "autre"},
-    {"text": "À quelle heure est la réunion de synchronisation de jeudi ?", "expected": "autre"},
-    {"text": "J'ai besoin d'un accès à l'outil de suivi des tickets.", "expected": "autre"},
-    {"text": "Merci pour votre aide sur le dossier de la semaine dernière !", "expected": "autre"}
+    {
+        "text": "Le sexe des patients arrive en 'unknown' alors que le logiciel de l'hôpital envoie bien 'F' ou 'M'.",
+        "expected": "erreur_de_mapping"
+    },
+    {
+        "text": "Les dates de naissance sont décalées d'un jour dans Doctolib par rapport au logiciel du centre d'imagerie.",
+        "expected": "erreur_de_mapping"
+    },
+    {
+        "text": "Le nom de famille se retrouve dans le champ prénom pour les patients du centre de santé.",
+        "expected": "erreur_de_mapping"
+    },
+    {
+        "text": "L'identifiant du patient est associé au mauvais champ après l'import depuis l'hôpital.",
+        "expected": "erreur_de_mapping"
+    },
+    {
+        "text": "La date de naissance est vide sur de nombreuses fiches patient importées ce matin.",
+        "expected": "donnee_manquante"
+    },
+    {
+        "text": "Certains patients n'ont pas de prénom après la synchronisation avec le magasin d'optique.",
+        "expected": "donnee_manquante"
+    },
+    {
+        "text": "Le champ adresse est absent pour tous les patients venant de l'audioprothésiste.",
+        "expected": "donnee_manquante"
+    },
+    {
+        "text": "Un patient de l'hôpital n'apparaît pas du tout chez nous alors qu'il est bien dans leur logiciel.",
+        "expected": "donnee_manquante"
+    },
+    {
+        "text": "On ne reçoit plus aucun message de l'hôpital depuis ce matin.",
+        "expected": "probleme_de_connexion"
+    },
+    {
+        "text": "L'API du centre d'imagerie répond avec une erreur 500 à chaque appel.",
+        "expected": "probleme_de_connexion"
+    },
+    {
+        "text": "La synchronisation est très lente et se termine souvent par un timeout.",
+        "expected": "probleme_de_connexion"
+    },
+    {
+        "text": "Le connecteur n'arrive plus à joindre le serveur du centre de santé depuis la mise à jour.",
+        "expected": "probleme_de_connexion"
+    },
+    {
+        "text": "Quelle est la différence entre un identifiant FHIR et un identifiant PID-3 en HL7 ?",
+        "expected": "question_de_format"
+    },
+    {
+        "text": "Où trouve-t-on la documentation du segment PID dans un message HL7 v2 ?",
+        "expected": "question_de_format"
+    },
+    {
+        "text": "Comment est structurée une ressource Patient FHIR pour le nom et le prénom ?",
+        "expected": "question_de_format"
+    },
+    {
+        "text": "Est-ce qu'un Bundle FHIR peut contenir plusieurs types de ressources ?",
+        "expected": "question_de_format"
+    },
+    {
+        "text": "Pouvez-vous m'ajouter à la liste de diffusion de l'équipe ?",
+        "expected": "autre"
+    },
+    {
+        "text": "À quelle heure est la réunion de synchronisation de jeudi ?",
+        "expected": "autre"
+    },
+    {
+        "text": "J'ai besoin d'un accès à l'outil de suivi des tickets.",
+        "expected": "autre"
+    },
+    {
+        "text": "Merci pour votre aide sur le dossier de la semaine dernière !",
+        "expected": "autre"
+    },
+    {
+        "text": "Les accents des noms sont remplacés par des points d'interrogation après l'import depuis le logiciel de l'hôpital.",
+        "expected": "erreur_de_mapping"
+    },
+    {
+        "text": "Le numéro de téléphone est vide pour tous les nouveaux patients du magasin d'optique.",
+        "expected": "donnee_manquante"
+    },
+    {
+        "text": "Erreur 503 sur le webservice du centre d'imagerie, ça dure depuis deux heures.",
+        "expected": "probleme_de_connexion"
+    },
+    {
+        "text": "C'est quoi exactement le segment PV1 dans un message ADT ?",
+        "expected": "question_de_format"
+    },
+    {
+        "text": "Quelqu'un a le lien de la salle de visio pour la démo client de demain ?",
+        "expected": "autre"
+    }
 ]
