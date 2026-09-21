@@ -1,6 +1,7 @@
 # 🏥 Healthcare FHIR Integration
 
 [![Tests](https://github.com/juliettebm/healthcare-fhir-integration/actions/workflows/tests.yml/badge.svg)](https://github.com/juliettebm/healthcare-fhir-integration/actions/workflows/tests.yml)
+[![Reproducibility](https://img.shields.io/badge/reproducibility-pinned%20%2B%20tested-success)](requirements.txt)
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FHIR](https://img.shields.io/badge/FHIR-R4-orange)](https://hl7.org/fhir/R4/)
 [![HL7](https://img.shields.io/badge/HL7-v2%20ADT-blue)](https://www.hl7.org/)
@@ -44,6 +45,7 @@ healthcare-fhir-integration/
 │   ├── interop_assistant.py       # local LLM client (Ollama), typed errors, diagnosis validation
 │   ├── ticket_triage.py           # closed-category classification of support requests
 │   ├── evaluate_triage.py         # accuracy measurement on labelled requests
+│   ├── triage_results.json         # versioned metrics used by the README contract test
 │   └── support_tickets.json       # 26 fictional labelled requests
 ├── hl7/
 │   ├── hl7_to_fhir.py             # HL7 v2 PID -> FHIR Patient, dates, gender, AI fallback
@@ -57,6 +59,7 @@ healthcare-fhir-integration/
 ├── main.py                        # FHIR -> SQLite pipeline
 ├── requirements.txt
 ├── requirements-app.txt           # adds Streamlit (optional demo only)
+├── .python-version                # exact interpreter version used in CI
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -163,13 +166,15 @@ The LLM is optional and isolated: an unreachable Ollama or an unusable answer is
 
 **Tests.** The pytest suite covers FHIR parsing and missing fields, Bundle pagination, HTTP errors, SQLite persistence and idempotent upsert, HL7 mapping (complete, partial and invalid dates, unexpected gender codes, incomplete `PID`), and the LLM guardrails (Ollama down versus invalid answer, severity imposed by Python). It runs on GitHub Actions at every push.
 
-**Support-request triage** (26 fictional labelled requests, Llama 3.2 3B, temperature 0):
+**Support-request triage** (26 fictional labelled requests, Llama 3.2 3B, temperature 0). The interval quantifies sampling uncertainty on this small internal set; it does not account for run-to-run LLM variability:
 
-| Prompt version | Correct answers |
-| --- | --- |
-| Baseline | **23 / 26** |
-| Sharper definition of `question_de_format` | 22 / 26 |
-| Extra rule in the system prompt | 20 / 26 |
+| Prompt version | Correct answers | Accuracy (Wilson 95% CI) |
+| --- | --- | --- |
+| Baseline | **23 / 26** | 88.5% (71.0%–96.0%) |
+| Sharper definition of question_de_format | **22 / 26** | 84.6% (66.5%–93.8%) |
+| Extra rule in the system prompt | **20 / 26** | 76.9% (57.9%–89.0%) |
+
+The machine-readable source is `ai/triage_results.json`. A pytest contract verifies the ticket count, recomputes every interval and checks that this table has not drifted from the versioned results.
 
 ---
 
@@ -184,6 +189,8 @@ The LLM is optional and isolated: an unreachable Ollama or an unusable answer is
 **Validation checks the contract, not the truth.** A support request such as *"A patient does not appear on our side, is it a sync problem?"* is classified as `question_de_format` because it is phrased as a question. Python cannot catch this: the category is in the allowed list. Two prompt fixes were measured (table above), each lowered the overall score, and both were reverted. With a small local model, wording moves results a lot, so changes are measured before being kept.
 
 **The triage score is optimistic.** Requests and prompt were written by the same person on a very small set. It illustrates an evaluation method, not real-world performance.
+
+**Calibration is not reported.** This LLM classifier returns a validated category, not a stable probability. A calibration curve or Brier score would therefore be misleading; calibration becomes relevant only if the interface is changed to expose reproducible class probabilities.
 
 ---
 

@@ -1,0 +1,28 @@
+{
+  "dataset": "ai/support_tickets.json",
+  "fictional_data": true,
+  "total_tickets": 26,
+  "model": "Llama 3.2 3B",
+  "temperature": 0,
+  "confidence_interval": "Wilson 95% interval over the 26 labelled tickets",
+  "runs": [
+    {
+      "prompt_version": "Baseline",
+      "correct": 23,
+      "accuracy": 0.8846153846,
+      "accuracy_95_ci": [0.710, 0.960]
+    },
+    {
+      "prompt_version": "Sharper definition of question_de_format",
+      "correct": 22,
+      "accuracy": 0.8461538462,
+      "accuracy_95_ci": [0.665, 0.938]
+    },
+    {
+      "prompt_version": "Extra rule in the system prompt",
+      "correct": 20,
+      "accuracy": 0.7692307692,
+      "accuracy_95_ci": [0.579, 0.890]
+    }
+  ]
+}
