@@ -1,3 +1,12 @@
+"""Persistance SQLite des patients FHIR.
+
+Crée la table `patients` et y enregistre les patients validés avec
+`INSERT OR REPLACE` sur l'`id` FHIR : relancer le pipeline met à jour les
+lignes existantes au lieu de les dupliquer (écriture idempotente).
+
+Outils : `sqlite3` (bibliothèque standard).
+Sortie : patients.db (non versionnée, voir .gitignore).
+"""
 import sqlite3
 
 

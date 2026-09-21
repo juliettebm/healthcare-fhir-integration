@@ -9,61 +9,63 @@
 [![Ollama](https://img.shields.io/badge/Ollama-Llama%203.2-black)](https://ollama.com/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-Healthcare interoperability mini-project in Python: consume a FHIR R4 REST API and store the validated data in SQLite, convert HL7 v2 ADT messages into FHIR `Patient` resources, and triage support requests with a guard-railed local LLM.
+Mini-projet d'interopérabilité en santé en Python : consommer une API REST FHIR R4 et stocker les données validées dans SQLite, convertir des messages HL7 v2 ADT en ressources FHIR `Patient`, et trier des demandes de support avec un LLM local sous garde-fous.
 
 ---
 
-## Objective
+## Objectif
 
-Hospitals, imaging centres and optical or hearing-aid retailers each run their own software. Making them exchange patient data means speaking several standards and coping with data that is late, partial or malformed. This project explores three small, realistic building blocks:
+Les hôpitaux, les centres d'imagerie ou les opticiens et audioprothésistes utilisent chacun leur propre logiciel. Les faire échanger des données patient impose de parler plusieurs standards et de composer avec des données en retard, partielles ou mal formées. Ce projet explore trois briques réalistes et de petite taille :
 
-1. **Consume a FHIR API**: query a REST server, walk through paginated `Bundle`s, validate and normalise `Patient` resources, persist them in SQL.
-2. **Translate HL7 v2 to FHIR**: parse the `PID` segment of an ADT message and map it to a FHIR `Patient`, handling incomplete or invalid values explicitly.
-3. **Use an LLM where it helps, and only there**: explain integration errors and classify support requests, while deterministic Python code keeps every decision that can be made reliably.
+1. **Consommer une API FHIR** : interroger un serveur REST, parcourir les `Bundle` paginés, valider et normaliser les ressources `Patient`, les stocker en SQL.
+2. **Traduire du HL7 v2 en FHIR** : lire le segment `PID` d'un message ADT et le convertir en `Patient` FHIR, en traitant explicitement les valeurs incomplètes ou invalides.
+3. **Utiliser un LLM là où il aide, et seulement là** : expliquer les erreurs d'intégration et classer des demandes de support, tandis que le code Python garde toutes les décisions qui peuvent être prises de façon fiable.
 
-The goal is a small project that is fully understood and defensible, not an integration engine.
+Ce projet est un démonstrateur éducatif construit sur des données publiques et fictives, qui reflète les missions d'un poste d'interopérabilité en santé, où des connecteurs relient des logiciels hospitaliers à des applications modernes : comprendre des formats hétérogènes (HL7 v2, FHIR, JSON), fiabiliser les flux de données, rendre les erreurs techniques exploitables par une équipe de support, et documenter l'ensemble. Stack : Python, API REST (`requests`), FHIR R4, HL7 v2, SQLite, pytest et GitHub Actions, plus un LLM local (Ollama, Llama 3.2) utilisé uniquement comme assistant optionnel.
 
----
-
-## Data
-
-- **FHIR source**: the public [HAPI FHIR R4 test server](https://hapi.fhir.org/baseR4). It is a shared test environment: content changes and must never be treated as real patient data.
-- **HL7 sample**: `hl7/sample_message.hl7` is a **fictional** ADT^A01 message.
-- **Support requests**: `ai/support_tickets.json` contains 26 **fictional** labelled requests.
-- The SQLite database (`patients.db`) and the generated `hl7/patient.json` are not versioned (see `.gitignore`).
+Le but est un petit projet entièrement compris et défendable, pas un moteur d'intégration. Il n'est ni validé pour un usage clinique ou de production, ni destiné à manipuler de vraies données patient.
 
 ---
 
-## Project Structure
+## Jeu de données
+
+- **Source FHIR** : le [serveur de test public HAPI FHIR R4](https://hapi.fhir.org/baseR4). C'est un environnement de test partagé : son contenu change et ne doit jamais être traité comme de vraies données patient.
+- **Exemple HL7** : `hl7/sample_message.hl7` est un message ADT^A01 **fictif**.
+- **Demandes de support** : `ai/support_tickets.json` contient 26 demandes étiquetées **fictives**.
+- La base SQLite (`patients.db`) et le fichier généré `hl7/patient.json` ne sont pas versionnés (voir `.gitignore`).
+
+---
+
+## Structure du projet
 
 ```
 healthcare-fhir-integration/
 │
 ├── .github/workflows/
-│   └── tests.yml                  # CI: runs pytest on every push and pull request
+│   └── tests.yml                  # CI : lance pytest à chaque push et pull request
 ├── ai/
-│   ├── interop_assistant.py       # local LLM client (Ollama), typed errors, diagnosis validation
-│   ├── ticket_triage.py           # closed-category classification of support requests
-│   ├── evaluate_triage.py         # accuracy measurement on labelled requests
-│   ├── triage_results.json         # versioned metrics used by the README contract test
-│   └── support_tickets.json       # 26 fictional labelled requests
+│   ├── interop_assistant.py       # client LLM local (Ollama), erreurs typées, validation du diagnostic
+│   ├── ticket_triage.py           # classification des demandes de support en catégories fermées
+│   ├── evaluate_triage.py         # mesure de l'exactitude sur des demandes étiquetées
+│   ├── triage_results.json        # métriques versionnées utilisées par le test de contrat du README
+│   └── support_tickets.json       # 26 demandes fictives étiquetées
 ├── hl7/
-│   ├── hl7_to_fhir.py             # HL7 v2 PID -> FHIR Patient, dates, gender, AI fallback
-│   └── sample_message.hl7         # fictional ADT^A01 message
+│   ├── hl7_to_fhir.py             # HL7 v2 PID -> FHIR Patient, dates, genre, diagnostic IA de repli
+│   └── sample_message.hl7         # message ADT^A01 fictif
 ├── notebooks/
-│   ├── 01_fhir_to_sqlite.ipynb    # documented, offline FHIR parsing and persistence walkthrough
-│   ├── 02_hl7_to_fhir.ipynb       # documented HL7 PID -> FHIR mapping and edge cases
-│   └── 03_llm_triage_evaluation.ipynb # versioned triage metrics and decisions
+│   ├── 01_fhir_to_sqlite.ipynb    # lecture et persistance FHIR documentées, hors ligne
+│   ├── 02_hl7_to_fhir.ipynb       # mapping HL7 PID -> FHIR Patient et cas limites
+│   └── 03_llm_triage_evaluation.ipynb # métriques de triage versionnées et décisions
 ├── src/
-│   ├── fhir_client.py             # HTTP calls, timeouts, Bundle pagination
-│   ├── parser.py                  # Patient normalisation and validation
-│   └── database.py                # SQLite persistence (idempotent upsert)
-├── tests/                         # pytest suite (parsing, mapping, HTTP errors, DB, LLM guardrails)
-├── app.py                         # optional Streamlit demo of the triage
-├── main.py                        # FHIR -> SQLite pipeline
+│   ├── fhir_client.py             # appels HTTP, délais maximum, pagination des Bundle
+│   ├── parser.py                  # normalisation et validation des Patient
+│   └── database.py                # persistance SQLite (upsert idempotent)
+├── tests/                         # suite pytest (parsing, mapping, erreurs HTTP, base, garde-fous LLM)
+├── app.py                         # démo Streamlit optionnelle du triage
+├── main.py                        # pipeline FHIR -> SQLite
 ├── requirements.txt
-├── requirements-app.txt           # adds Streamlit (optional demo only)
-├── .python-version                # exact interpreter version used in CI
+├── requirements-app.txt           # ajoute Streamlit (démo optionnelle uniquement)
+├── .python-version                # version exacte de l'interpréteur utilisée en CI
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -71,70 +73,68 @@ healthcare-fhir-integration/
 
 ---
 
-## Reproduce
+## Reproduire
 
-### 1. Clone the repository
+### 1. Cloner le dépôt
 
 ```bash
 git clone https://github.com/juliettebm/healthcare-fhir-integration.git
 cd healthcare-fhir-integration
 ```
 
-### 2. Install dependencies
+### 2. Installer les dépendances
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate            # Linux/macOS: source .venv/bin/activate
+.venv\Scripts\activate            # Linux/macOS : source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Run the pipelines
+### 3. Lancer les pipelines
 
 ```bash
-python main.py                    # FHIR API -> validation -> SQLite (3 pages of 5 patients)
-python -m hl7.hl7_to_fhir         # HL7 v2 -> FHIR Patient, written to hl7/patient.json
-python -m pytest                  # test suite
+python main.py                    # API FHIR -> validation -> SQLite (3 pages de 5 patients)
+python -m hl7.hl7_to_fhir         # HL7 v2 -> FHIR Patient, écrit dans hl7/patient.json
+python -m pytest                  # suite de tests
 ```
 
-The FHIR pipeline is deliberately capped at 3 pages to avoid overloading the public test server.
+Le pipeline FHIR est volontairement limité à 3 pages pour ne pas surcharger le serveur de test public.
 
-The notebooks can be run in numerical order. They use fictional or versioned local
-examples and import the production modules instead of duplicating their implementation;
-the first notebook deliberately avoids calling the changing public FHIR server.
+Les notebooks s'exécutent dans l'ordre numérique. Ils utilisent des exemples locaux fictifs ou versionnés et importent les modules de production au lieu de dupliquer leur implémentation ; le premier notebook évite volontairement d'appeler le serveur FHIR public, dont le contenu change.
 
-### 4. Optional: local LLM features
+### 4. Optionnel : fonctions LLM locales
 
-Install [Ollama](https://ollama.com/), then:
+Installer [Ollama](https://ollama.com/), puis :
 
 ```bash
 ollama pull llama3.2
-python -m ai.evaluate_triage      # measure the support-request triage
+python -m ai.evaluate_triage      # mesurer le tri des demandes de support
 pip install -r requirements-app.txt
-streamlit run app.py              # minimal triage demo
+streamlit run app.py              # démo minimale du triage
 ```
 
-Nothing in the FHIR or HL7 pipelines depends on the LLM: if Ollama is unavailable, they run unchanged.
+Rien dans les pipelines FHIR ou HL7 ne dépend du LLM : si Ollama est indisponible, ils fonctionnent à l'identique.
 
 ---
 
-## Methodology
+## Méthodologie
 
-### FHIR API to SQLite
-
-```
-FHIR R4 API -> HTTP GET -> Bundle -> pagination (link "next") -> parsing -> validation -> SQLite
-```
-
-1. **Retrieval**: `requests` with an explicit timeout and `raise_for_status()`.
-2. **Pagination**: the `next` link of each `Bundle` is followed, up to a page cap.
-3. **Parsing**: fields that may be absent (`name`, `gender`, `birthDate`) are read defensively; a missing field becomes `None`, never a crash.
-4. **Validation**: a patient without an `id` is skipped and logged.
-5. **Persistence**: `INSERT OR REPLACE` keyed on the FHIR `id`, so re-running the pipeline updates existing rows instead of duplicating them.
-
-### HL7 v2 to FHIR
+### De l'API FHIR à SQLite
 
 ```
-ADT^A01 -> PID segment -> split fields and components -> mapping -> FHIR Patient -> JSON
+API FHIR R4 -> HTTP GET -> Bundle -> pagination (lien "next") -> parsing -> validation -> SQLite
+```
+
+1. **Récupération** : `requests` avec un délai maximum explicite et `raise_for_status()`.
+2. **Pagination** : le lien `next` de chaque `Bundle` est suivi, jusqu'à un plafond de pages.
+3. **Parsing** : les champs pouvant être absents (`name`, `gender`, `birthDate`) sont lus de façon défensive ; un champ manquant devient `None`, jamais une erreur.
+4. **Validation** : un patient sans `id` est ignoré et journalisé.
+5. **Persistance** : `INSERT OR REPLACE` sur l'`id` FHIR, si bien que relancer le pipeline met à jour les lignes existantes au lieu de les dupliquer.
+
+### De HL7 v2 à FHIR
+
+```
+ADT^A01 -> segment PID -> découpage champs et composants -> mapping -> FHIR Patient -> JSON
 ```
 
 | HL7 v2 | FHIR |
@@ -145,17 +145,17 @@ ADT^A01 -> PID segment -> split fields and components -> mapping -> FHIR Patient
 | `PID-7` | `Patient.birthDate` |
 | `PID-8` | `Patient.gender` |
 
-- **Dates**: `19920403` becomes `1992-04-03`, `199204` becomes `1992-04`, `1992` stays `1992` (FHIR `date` allows partial precision). Impossible dates such as `20260231` are rejected with a warning.
-- **Gender**: `F`, `M`, `O`, `U` map to `female`, `male`, `other`, `unknown`. Any other code becomes `unknown` and raises a warning, because it loses information. An empty field is `unknown` without warning: absence of data is not an invalid value.
+- **Dates** : `19920403` devient `1992-04-03`, `199204` devient `1992-04`, `1992` reste `1992` (le type FHIR `date` accepte une précision partielle). Les dates impossibles comme `20260231` sont rejetées avec un avertissement.
+- **Genre** : `F`, `M`, `O`, `U` correspondent à `female`, `male`, `other`, `unknown`. Tout autre code devient `unknown` et déclenche un avertissement, car il fait perdre de l'information. Un champ vide donne `unknown` sans avertissement : l'absence de donnée n'est pas une valeur invalide.
 
-### Where the LLM is used
+### Où le LLM intervient
 
-| Use | LLM's role | Python's role |
+| Usage | Rôle du LLM | Rôle de Python |
 | --- | --- | --- |
-| Error diagnosis | Explains a blocking HL7 error in plain language | Detects the error, **decides the severity**, validates the JSON contract |
-| Request triage | Picks one category from a closed list | Rejects any answer outside the list |
+| Diagnostic d'erreur | Explique en langage clair une erreur HL7 bloquante | Détecte l'erreur, **décide de la sévérité**, valide le contrat JSON |
+| Tri des demandes | Choisit une catégorie dans une liste fermée | Rejette toute réponse hors de la liste |
 
-The LLM is optional and isolated: an unreachable Ollama or an unusable answer is logged and the pipeline carries on. Real example, for a message with no `PID` segment:
+Le LLM est optionnel et isolé : si Ollama est injoignable ou si la réponse est inexploitable, l'incident est journalisé et le pipeline continue. Exemple réel, pour un message sans segment `PID` :
 
 ```json
 {
@@ -170,68 +170,68 @@ The LLM is optional and isolated: an unreachable Ollama or an unusable answer is
 
 ---
 
-## Key Results
+## Résultats clés
 
-**Tests.** The pytest suite covers FHIR parsing and missing fields, Bundle pagination, HTTP errors, SQLite persistence and idempotent upsert, HL7 mapping (complete, partial and invalid dates, unexpected gender codes, incomplete `PID`), and the LLM guardrails (Ollama down versus invalid answer, severity imposed by Python). It runs on GitHub Actions at every push.
+**Tests.** La suite pytest couvre le parsing FHIR et les champs manquants, la pagination des Bundle, les erreurs HTTP, la persistance SQLite et l'upsert idempotent, le mapping HL7 (dates complètes, partielles et invalides, codes de genre inattendus, `PID` incomplet) et les garde-fous du LLM (Ollama arrêté ou réponse invalide, sévérité imposée par Python). Elle s'exécute sur GitHub Actions à chaque push.
 
-**Support-request triage** (26 fictional labelled requests, Llama 3.2 3B, temperature 0). The interval quantifies sampling uncertainty on this small internal set; it does not account for run-to-run LLM variability:
+**Tri des demandes de support** (26 demandes fictives étiquetées, Llama 3.2 3B, température 0). L'intervalle quantifie l'incertitude d'échantillonnage sur ce petit jeu interne ; il ne tient pas compte de la variabilité du LLM d'une exécution à l'autre :
 
-| Prompt version | Correct answers | Accuracy (Wilson 95% CI) |
+| Version du prompt | Réponses correctes | Exactitude (IC de Wilson à 95 %) |
 | --- | --- | --- |
-| Baseline | **23 / 26** | 88.5% (71.0%–96.0%) |
-| Sharper definition of question_de_format | **22 / 26** | 84.6% (66.5%–93.8%) |
-| Extra rule in the system prompt | **20 / 26** | 76.9% (57.9%–89.0%) |
+| Référence | **23 / 26** | 88.5% (71.0%–96.0%) |
+| Définition plus précise de question_de_format | **22 / 26** | 84.6% (66.5%–93.8%) |
+| Règle supplémentaire dans le prompt système | **20 / 26** | 76.9% (57.9%–89.0%) |
 
-The machine-readable source is `ai/triage_results.json`. A pytest contract verifies the ticket count, recomputes every interval and checks that this table has not drifted from the versioned results.
-
----
-
-## Methodological Notes
-
-**Deterministic rules stay in Python.** Parsing, mapping, validation, error detection and severity are plain code. The prompt tells the model the severity and forbids re-evaluating it, and a test checks that Python's value wins over the model's.
-
-**`PID-3` maps to `Patient.identifier`, not `Patient.id`.** The source system's business identifier is kept distinct from the logical id of the FHIR resource.
-
-**No patient value in logs.** Warnings about invalid dates or codes describe the problem without printing the patient's data. The unexpected gender *code* is logged, since it is a code and not an identifier.
-
-**Validation checks the contract, not the truth.** A support request such as *"A patient does not appear on our side, is it a sync problem?"* is classified as `question_de_format` because it is phrased as a question. Python cannot catch this: the category is in the allowed list. Two prompt fixes were measured (table above), each lowered the overall score, and both were reverted. With a small local model, wording moves results a lot, so changes are measured before being kept.
-
-**The triage score is optimistic.** Requests and prompt were written by the same person on a very small set. It illustrates an evaluation method, not real-world performance.
-
-**Calibration is not reported.** This LLM classifier returns a validated category, not a stable probability. A calibration curve or Brier score would therefore be misleading; calibration becomes relevant only if the interface is changed to expose reproducible class probabilities.
+La source lisible par machine est `ai/triage_results.json`. Un test pytest vérifie le nombre de demandes, recalcule chaque intervalle et contrôle que ce tableau n'a pas divergé des résultats versionnés.
 
 ---
 
-## Limitations and Next Steps
+## Notes méthodologiques
 
-- HL7 parsing is deliberately naive: only the `PID` segment of ADT messages, no custom separators, no field repetitions (`~`), no escape sequences, no dates with time or time zone.
-- The assigning authority in `PID-3` (`HOSPITAL_A`) is not yet mapped to `identifier.system`.
-- FHIR validation is limited to checking the resource `id`; a full validator would check profiles.
-- Add other segments and message types, other FHIR resources, and sending generated resources to a FHIR server.
-- Larger, harder evaluation set for the triage (ambiguous requests, anonymised real ones); abstraction of the LLM provider.
-- Advanced logging (files, rotation, configurable levels).
+**Les règles déterministes restent dans Python.** Le parsing, le mapping, la validation, la détection d'erreur et la sévérité sont du code ordinaire. Le prompt indique la sévérité au modèle et lui interdit de la réévaluer, et un test vérifie que la valeur de Python l'emporte sur celle du modèle.
+
+**`PID-3` correspond à `Patient.identifier`, pas à `Patient.id`.** L'identifiant métier du système source reste distinct de l'identifiant logique de la ressource FHIR.
+
+**Aucune valeur patient dans les logs.** Les avertissements sur une date ou un code invalide décrivent le problème sans afficher les données du patient. Le *code* de genre inattendu est journalisé, car c'est un code et non un identifiant.
+
+**La validation vérifie le contrat, pas la vérité.** Une demande comme *« Un patient n'apparaît pas chez nous, est-ce un problème de synchronisation ? »* est classée `question_de_format` parce qu'elle est formulée comme une question. Python ne peut pas l'intercepter : la catégorie figure dans la liste autorisée. Deux corrections de prompt ont été mesurées (tableau ci-dessus) ; chacune a fait baisser le score global et les deux ont été annulées. Avec un petit modèle local, la formulation fait beaucoup varier les résultats, donc les changements sont mesurés avant d'être conservés.
+
+**Le score de triage est optimiste.** Les demandes et le prompt ont été écrits par la même personne sur un très petit jeu. Il illustre une méthode d'évaluation, pas une performance en conditions réelles.
+
+**La calibration n'est pas rapportée.** Ce classifieur LLM renvoie une catégorie validée, pas une probabilité stable. Une courbe de calibration ou un score de Brier serait donc trompeur ; la calibration ne devient pertinente que si l'interface expose des probabilités de classe reproductibles.
 
 ---
 
-## Disclaimer
+## Limites et prochaines étapes
 
-⚠️ Educational prototype. It uses a public test server and fictional data only, and is not an integration engine. Running the LLM locally with Ollama keeps data on the machine but is not, by itself, a compliance or security guarantee for real health data.
+- Le parsing HL7 est volontairement simple : uniquement le segment `PID` des messages ADT, pas de séparateurs personnalisés, pas de répétitions de champs (`~`), pas de séquences d'échappement, pas de dates avec heure ou fuseau horaire.
+- L'autorité d'affectation de `PID-3` (`HOSPITAL_A`) n'est pas encore mappée vers `identifier.system`.
+- La validation FHIR se limite au contrôle de l'`id` de la ressource ; un validateur complet vérifierait les profils.
+- Ajouter d'autres segments et types de messages, d'autres ressources FHIR, et l'envoi des ressources générées vers un serveur FHIR.
+- Jeu d'évaluation plus grand et plus difficile pour le triage (demandes ambiguës, demandes réelles anonymisées) ; abstraction du fournisseur de LLM.
+- Journalisation avancée (fichiers, rotation, niveaux configurables).
+
+---
+
+## Avertissement
+
+⚠️ Prototype éducatif. Il utilise un serveur de test public et des données fictives uniquement, et n'est pas un moteur d'intégration. Exécuter le LLM en local avec Ollama garde les données sur la machine, mais ne constitue pas en soi une garantie de conformité ou de sécurité pour de vraies données de santé.
 
 ---
 
 ## Stack
 
-Python 3.12 · requests · SQLite · pytest · GitHub Actions · Ollama (Llama 3.2) · Streamlit (optional)
+Python 3.12 · requests · SQLite · pytest · GitHub Actions · Ollama (Llama 3.2) · Streamlit (optionnel)
 
 ---
 
-## License
+## Licence
 
-Released under the [MIT License](LICENSE).
+Publié sous [licence MIT](LICENSE).
 
 ---
 
-## Author
+## Autrice
 
 **Juliette Bouli-Mengue**
-Clinical Research to Data Science
+De la recherche clinique à la data science

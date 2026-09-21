@@ -1,3 +1,13 @@
+"""Normalisation et validation des ressources FHIR `Patient`.
+
+Transforme une ressource `Patient` brute en dictionnaire plat (id, prénom,
+nom, genre, date de naissance). Les champs facultatifs de FHIR (`name`,
+`gender`, `birthDate`) peuvent manquer : un champ absent devient `None` et ne
+fait jamais planter le pipeline. Un patient sans `id` est jugé invalide, car
+l'`id` sert de clé en base.
+
+Outils : bibliothèque standard uniquement.
+"""
 def parse_patient(patient):
     patient_id = patient.get("id")
     gender = patient.get("gender")

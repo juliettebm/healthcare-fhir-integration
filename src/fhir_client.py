@@ -1,3 +1,13 @@
+"""Client HTTP pour l'API FHIR R4 (serveur de test public HAPI).
+
+Récupère des ressources `Patient` sous forme de `Bundle` et suit le lien
+`next` de chaque page. Chaque appel a un délai maximum explicite et lève une
+erreur HTTP plutôt que de renvoyer une réponse invalide : l'appelant décide
+quoi faire d'une panne réseau.
+
+Outils : `requests`. Le serveur HAPI est un environnement de test partagé,
+son contenu change et ne doit jamais être traité comme de vraies données.
+"""
 import requests
 
 

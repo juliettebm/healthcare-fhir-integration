@@ -1,3 +1,23 @@
+"""Conversion d'un message HL7 v2 ADT en ressource FHIR `Patient`.
+
+Beaucoup d'hôpitaux émettent encore du HL7 v2 alors que les systèmes récents
+utilisent FHIR : ce module traduit le segment `PID` d'un message ADT^A01
+(identifiant, nom, date de naissance, genre) vers un `Patient` FHIR.
+
+Le mapping est volontairement déterministe, sans LLM : une date ou un genre
+mal converti dans un dossier patient n'est pas acceptable. Une date
+impossible est rejetée, un code de genre inattendu devient `unknown` avec un
+avertissement, et aucune valeur patient n'est écrite dans les logs. Si le
+mapping échoue, un diagnostic optionnel est demandé à l'assistant local
+(ai/interop_assistant.py) ; sa panne n'interrompt jamais le pipeline.
+
+Outils : bibliothèque standard (`json`, `logging`, `datetime`).
+Entrée : hl7/sample_message.hl7 (message fictif).
+Sortie : hl7/patient.json (non versionné).
+
+Usage :
+    python -m hl7.hl7_to_fhir
+"""
 import json
 import logging
 from datetime import date

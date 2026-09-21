@@ -1,3 +1,12 @@
+"""Tri de demandes de support d'interopérabilité par un LLM sous garde-fous.
+
+Le LLM choisit une catégorie dans une liste fermée (`CATEGORIES`) ; toute
+réponse hors de cette liste est rejetée par Python. Le modèle classe la
+demande, il n'y répond jamais.
+
+Outils : Ollama (Llama 3.2 3B, température 0) via ai/interop_assistant.py.
+Évaluation sur 26 tickets fictifs étiquetés : voir ai/evaluate_triage.py.
+"""
 from ai.interop_assistant import InvalidLLMResponseError, call_ollama
 
 CATEGORIES = {

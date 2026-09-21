@@ -1,3 +1,21 @@
+"""Pipeline FHIR -> SQLite.
+
+Interroge le serveur de test public HAPI FHIR (R4), parcourt les pages de
+`Bundle` de ressources `Patient`, normalise et valide chaque patient, puis
+les enregistre dans SQLite. Les données reçues d'un serveur externe sont
+souvent partielles : mieux vaut écarter ce qui est inutilisable que polluer
+la base.
+
+Outils : `requests` (src/fhir_client.py), parsing défensif (src/parser.py),
+`sqlite3` avec upsert idempotent (src/database.py).
+
+Sortie : patients.db, table `patients` (non versionnée). Relancer le script
+met à jour les lignes existantes au lieu de les dupliquer. Le nombre de pages
+est plafonné à 3 pour ne pas surcharger le serveur public.
+
+Usage :
+    python main.py
+"""
 import logging
 
 import requests

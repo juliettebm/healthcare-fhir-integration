@@ -1,3 +1,15 @@
+"""Assistant LLM local pour expliquer les erreurs d'interopérabilité HL7 -> FHIR.
+
+Quand le mapping échoue (ex. segment `PID` absent), le LLM explique l'erreur
+en langage clair et propose une action technique. Il ne décide de rien :
+Python détecte l'erreur, impose la sévérité et valide que la réponse respecte
+le contrat JSON attendu (champs présents, valeurs autorisées).
+
+Outils : Ollama (Llama 3.2 3B, température 0) appelé via `requests`.
+Deux erreurs typées distinguent une panne d'Ollama (`OllamaUnavailableError`)
+d'une réponse inexploitable (`InvalidLLMResponseError`), ce qui permet au
+pipeline de continuer sans l'IA.
+"""
 import json
 
 import requests
