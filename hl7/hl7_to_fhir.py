@@ -65,9 +65,12 @@ def parse_pid(pid_segment):
             }
         ],
         "name": [fhir_name],
-        "gender": fhir_gender,
-        "birthDate": fhir_birth_date
+        "gender": fhir_gender
     }
+
+    # Une propriété nulle est invalide en FHIR : on omet la clé.
+    if fhir_birth_date is not None:
+        fhir_patient["birthDate"] = fhir_birth_date
 
     return fhir_patient
 

@@ -7,7 +7,7 @@ souvent partielles : mieux vaut écarter ce qui est inutilisable que polluer
 la base.
 
 Outils : `requests` (src/fhir_client.py), parsing défensif (src/parser.py),
-`sqlite3` avec upsert idempotent (src/database.py).
+`sqlite3` avec mise à jour des lignes existantes (src/database.py).
 
 Sortie : patients.db, table `patients` (non versionnée). Relancer le script
 met à jour les lignes existantes au lieu de les dupliquer. Le nombre de pages
@@ -53,8 +53,6 @@ def main():
                 else:
                     logger.warning("Patient ignoré : identifiant manquant")
 
-                print(parsed_patient)
-
     except requests.RequestException as error:
         logger.error("Erreur lors de l'appel à l'API FHIR : %s", error)
         return
@@ -65,9 +63,6 @@ def main():
 
     print("\n=== PATIENTS EN BASE ===")
     print("Nombre de patients :", len(stored_patients))
-
-    for patient in stored_patients:
-        print(patient)
 
 
 if __name__ == "__main__":

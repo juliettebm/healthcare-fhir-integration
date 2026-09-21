@@ -59,7 +59,7 @@ healthcare-fhir-integration/
 ├── src/
 │   ├── fhir_client.py             # appels HTTP, délais maximum, pagination des Bundle
 │   ├── parser.py                  # normalisation et validation des Patient
-│   └── database.py                # persistance SQLite (upsert idempotent)
+│   └── database.py                # persistance SQLite (pas de doublon au relancement)
 ├── tests/                         # suite pytest (parsing, mapping, erreurs HTTP, base, garde-fous LLM)
 ├── app.py                         # démo Streamlit optionnelle du triage
 ├── main.py                        # pipeline FHIR -> SQLite
@@ -145,7 +145,7 @@ ADT^A01 -> segment PID -> découpage champs et composants -> mapping -> FHIR Pat
 | `PID-7` | `Patient.birthDate` |
 | `PID-8` | `Patient.gender` |
 
-- **Dates** : `19920403` devient `1992-04-03`, `199204` devient `1992-04`, `1992` reste `1992` (le type FHIR `date` accepte une précision partielle). Les dates impossibles comme `20260231` sont rejetées avec un avertissement.
+- **Dates** : `19920403` devient `1992-04-03`, `199204` devient `1992-04`, `1992` reste `1992` (le type FHIR `date` accepte une précision partielle). Les dates impossibles comme `20260231` sont rejetées avec un avertissement et la clé `birthDate` est alors omise de la ressource : une propriété nulle n'est pas valide en FHIR.
 - **Genre** : `F`, `M`, `O`, `U` correspondent à `female`, `male`, `other`, `unknown`. Tout autre code devient `unknown` et déclenche un avertissement, car il fait perdre de l'information. Un champ vide donne `unknown` sans avertissement : l'absence de donnée n'est pas une valeur invalide.
 
 ### Où le LLM intervient
@@ -172,7 +172,7 @@ Le LLM est optionnel et isolé : si Ollama est injoignable ou si la réponse est
 
 ## Résultats clés
 
-**Tests.** La suite pytest couvre le parsing FHIR et les champs manquants, la pagination des Bundle, les erreurs HTTP, la persistance SQLite et l'upsert idempotent, le mapping HL7 (dates complètes, partielles et invalides, codes de genre inattendus, `PID` incomplet) et les garde-fous du LLM (Ollama arrêté ou réponse invalide, sévérité imposée par Python). Elle s'exécute sur GitHub Actions à chaque push.
+**Tests.** La suite pytest couvre le parsing FHIR et les champs manquants, la pagination des Bundle, les erreurs HTTP, la persistance SQLite et l'absence de doublon quand on relance l'import, le mapping HL7 (dates complètes, partielles et invalides, codes de genre inattendus, `PID` incomplet) et les garde-fous du LLM (Ollama arrêté ou réponse invalide, sévérité imposée par Python). Elle s'exécute sur GitHub Actions à chaque push.
 
 **Tri des demandes de support** (26 demandes fictives étiquetées, Llama 3.2 3B, température 0). L'intervalle quantifie l'incertitude d'échantillonnage sur ce petit jeu interne ; il ne tient pas compte de la variabilité du LLM d'une exécution à l'autre :
 

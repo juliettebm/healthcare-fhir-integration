@@ -172,3 +172,13 @@ def test_empty_gender_is_unknown_without_warning(caplog):
 
     assert result == "unknown"
     assert caplog.records == []
+
+
+@pytest.mark.parametrize("invalid_date", ["20260231", "ABCDEFGH", ""])
+def test_parse_pid_omits_birth_date_when_invalid(invalid_date):
+    pid = f"PID|1||PAT12345^^^HOSPITAL_A^MR||MARTIN^Julie||{invalid_date}|F"
+
+    result = parse_pid(pid)
+
+    assert "birthDate" not in result
+    assert None not in result.values()
