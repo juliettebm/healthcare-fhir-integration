@@ -30,9 +30,11 @@ def wilson_interval(correct: int, total: int, z: float = 1.959963984540054) -> t
     return centre - margin, centre + margin
 
 
-def main():
-    tickets = json.loads(TICKETS_FILE.read_text(encoding="utf-8"))
+def evaluate(tickets):
+    """Classe chaque ticket et renvoie le nombre de bonnes réponses, de rejets et la liste des erreurs.
 
+    Lève OllamaUnavailableError si Ollama ne répond pas.
+    """
     correct = 0
     rejected = 0
     mistakes = []
@@ -40,9 +42,6 @@ def main():
     for ticket in tickets:
         try:
             predicted = classify_ticket(ticket["text"])
-        except OllamaUnavailableError as error:
-            print(f"Ollama indisponible, évaluation arrêtée : {error}")
-            return
         except InvalidLLMResponseError:
             rejected += 1
             mistakes.append((ticket["text"], ticket["expected"], "(réponse rejetée)"))
@@ -53,13 +52,30 @@ def main():
         else:
             mistakes.append((ticket["text"], ticket["expected"], predicted))
 
-    print(f"Résultat : {correct} bonnes réponses sur {len(tickets)}")
-    lower, upper = wilson_interval(correct, len(tickets))
-    print(f"Exactitude : {correct / len(tickets):.1%} (IC 95 % de Wilson : {lower:.1%}–{upper:.1%})")
-    print(f"Réponses rejetées par la validation : {rejected}")
+    return {"correct": correct, "rejected": rejected, "mistakes": mistakes}
 
-    for text, expected, predicted in mistakes:
+
+def print_report(outcome, total):
+    correct = outcome["correct"]
+    print(f"Résultat : {correct} bonnes réponses sur {total}")
+    lower, upper = wilson_interval(correct, total)
+    print(f"Exactitude : {correct / total:.1%} (IC 95 % de Wilson : {lower:.1%}–{upper:.1%})")
+    print(f"Réponses rejetées par la validation : {outcome['rejected']}")
+
+    for text, expected, predicted in outcome["mistakes"]:
         print(f"\n- {text}\n  attendu : {expected} | obtenu : {predicted}")
+
+
+def main():
+    tickets = json.loads(TICKETS_FILE.read_text(encoding="utf-8"))
+
+    try:
+        outcome = evaluate(tickets)
+    except OllamaUnavailableError as error:
+        print(f"Ollama indisponible, évaluation arrêtée : {error}")
+        return
+
+    print_report(outcome, len(tickets))
 
 
 if __name__ == "__main__":
