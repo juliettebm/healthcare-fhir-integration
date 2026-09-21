@@ -50,6 +50,10 @@ healthcare-fhir-integration/
 ├── hl7/
 │   ├── hl7_to_fhir.py             # HL7 v2 PID -> FHIR Patient, dates, gender, AI fallback
 │   └── sample_message.hl7         # fictional ADT^A01 message
+├── notebooks/
+│   ├── 01_fhir_to_sqlite.ipynb    # documented, offline FHIR parsing and persistence walkthrough
+│   ├── 02_hl7_to_fhir.ipynb       # documented HL7 PID -> FHIR mapping and edge cases
+│   └── 03_llm_triage_evaluation.ipynb # versioned triage metrics and decisions
 ├── src/
 │   ├── fhir_client.py             # HTTP calls, timeouts, Bundle pagination
 │   ├── parser.py                  # Patient normalisation and validation
@@ -93,6 +97,10 @@ python -m pytest                  # test suite
 ```
 
 The FHIR pipeline is deliberately capped at 3 pages to avoid overloading the public test server.
+
+The notebooks can be run in numerical order. They use fictional or versioned local
+examples and import the production modules instead of duplicating their implementation;
+the first notebook deliberately avoids calling the changing public FHIR server.
 
 ### 4. Optional: local LLM features
 
